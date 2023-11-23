@@ -1,34 +1,38 @@
+import pathlib
+import shutil
 import sys
 import os
 
 try:
-    video_file = sys.argv[1]
+    file_path = sys.argv[1]
 except IndexError:
     print("Please provide a mp4 file")
     sys.exit(1)
 
-if not os.path.isfile(video_file):
+if not os.path.isfile(file_path):
     print(f"{video_file} does not exist!")
     sys.exit(1)
-if not video_file.endswith(".mp4"):
-    print(f"{video_file}'s format is not supported!")
+if not file_path.endswith(".mp4"):
+    print(f"{file_path}'s format is not supported!")
     sys.exit(1)
 
+video_file = pathlib.Path(file_path)
+print (video_file)
 # refresh img folder to prevent weird stuff
-os.system("rm -rf target")
-os.system("mkdir target/img -p")
-os.system("mkdir target/audio -p")
+shutil.rmtree("target",ignore_errors=True)
+os.system(f"mkdir {os.path.join('target','img')}")
+os.system(f"mkdir {os.path.join('target','audio')}")
 # Get random audio name to prevent overwriting
 
 # Extract audio from video
-os.system(f"ffmpeg -i {video_file} target/audio/audio.mp3")
+os.system(f"ffmpeg -i \"{video_file}\" {os.path.join('target','audio','audio.mp3')}")
 
 print("Congrats! The audio has been extracted from the video sucessfully")
 
-os.system(f"ffmpeg -i {video_file} -vf fps=15 target/img/output%d.png")
+os.system(f"ffmpeg -i \"{video_file}\" -vf fps=15 {os.path.join('target','img','output%d.png')}")
 
 count = 0
-dir_path = f"{os.getcwd()}/target/img"
+dir_path = f"{os.path.join(os.getcwd(), 'target','img')}"
 # Iterate directory
 for path in os.listdir(dir_path):
     # check if current path is a file
@@ -39,13 +43,15 @@ for path in os.listdir(dir_path):
 os.chdir("target")
 os.system("mkdir metadata")
 os.chdir("metadata")
-os.system(f"printf {count} > framenum.txt")
+with open('framenum.txt', 'w') as f:
+    f.write(f'{count}')
+    f.close()
 os.chdir("..")
 os.chdir("..")
 
-os.system("tar cf target.tar.gz ./target")
-exported = video_file.replace(".mp4", ".asciivideo")
-os.system(f"mv target.tar.gz {exported}")
+os.system(f"tar cf target.tar.gz {os.path.join('.','target')}")
+exported = pathlib.Path(file_path.replace(".mp4", ".asciivideo"))
+shutil.move("target.tar.gz", exported)
 print("finishing up...")
-os.system("rm -rf target")
+shutil.rmtree("target")
 print("done!")

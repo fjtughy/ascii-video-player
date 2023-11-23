@@ -8,6 +8,7 @@ ffmpeg
 GNU coreutils
 """
 
+import shutil
 import sys
 import time
 import os
@@ -40,9 +41,9 @@ if not video.endswith(".asciivideo"):
     sys.exit(1)
 
 tar_name = video.replace(".asciivideo", ".tar.gz")
-os.system(f"mv {video} {tar_name}")
-os.system(f"tar xf {tar_name}")
-os.system(f"mv {tar_name} {video}")
+shutil.move(video, tar_name)
+os.system(f"tar xf \"{tar_name}\"")
+shutil.move(tar_name, video)
 
 # Get frame number
 
@@ -62,9 +63,9 @@ y = os.get_terminal_size().lines
 os.chdir("target")
 os.mkdir("resized")
 for i in tqdm(range(1, frame_number+1)):
-    image = Image.open(f"img/output{i}.png")
+    image = Image.open(os.path.join('img',f'output{i}.png'))
     image = image.resize((x, y))
-    image.save(f"resized/new{i}.png")
+    image.save(os.path.join("resized",f"new{i}.png"))
 
 slackers = frame_number // 4
 nuli = frame_number - (slackers * 3)
@@ -112,7 +113,7 @@ def is_valid(local_frames: list) -> bool:
 def worker1():
     for i in tqdm(range(1, nuli+1)):
         try:
-            with Image.open(f"{current}/resized/new{i}.png") as img:
+            with Image.open(os.path.join(current,"resized",f"new{i}.png")) as img:
                 img = img.getdata(0)
                 img = np.array(img)
                 w1.append(process(img))
@@ -126,7 +127,7 @@ def worker1():
 def worker2():
     for i in range(nuli+1, nuli+slackers+1):
         try:
-            with Image.open(f"{current}/resized/new{i}.png") as img:
+            with Image.open(os.path.join(current,"resized",f"new{i}.png")) as img:
                 img = img.getdata(0)
                 img = np.array(img)
                 w2.append(process(img))
@@ -137,7 +138,7 @@ def worker2():
 def worker3():
     for i in range(nuli+slackers+1, nuli+slackers+slackers+1):
         try:
-            with Image.open(f"{current}/resized/new{i}.png") as img:
+            with Image.open(os.path.join(current,"resized",f"new{i}.png")) as img:
                 img = img.getdata(0)
                 img = np.array(img)
                 w3.append(process(img))
@@ -148,7 +149,7 @@ def worker3():
 def worker4():
     for i in range(nuli+slackers+slackers+1, nuli+(slackers*3)+1):
         try:
-            with Image.open(f"{current}/resized/new{i}.png") as img:
+            with Image.open(os.path.join(current,"resized",f"new{i}.png")) as img:
                 img = img.getdata(0)
                 img = np.array(img)
                 w4.append(process(img))
@@ -174,19 +175,20 @@ if not is_valid(frames):
     sys.exit(1)
 
 pygame.mixer.init()
-pygame.mixer.music.load(f"{current}/audio/audio.mp3")
+pygame.mixer.music.load(os.path.join(current,"audio","audio.mp3"))
 
 os.chdir("..")
-os.system("rm -rf target")
+shutil.rmtree("target",ignore_errors=True)
 
 logger.debug("Video playback started")
 frame = 0
 next_call = time.perf_counter()
 pygame.mixer.music.play()
+
 while 1:
     if time.perf_counter() > next_call:
         next_call += 1/15
-        os.system("clear")
+        os.system('cls' if os.name == 'nt' else 'clear')
         try:
             print(frames[frame])
         except IndexError:
